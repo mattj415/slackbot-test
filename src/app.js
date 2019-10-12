@@ -1,28 +1,37 @@
 import express from 'express'
 import path from 'path'
 import cookieParser from 'cookie-parser'
-import logger from 'morgan'
+import { log } from './util/serverUtils';
+import usersRouter from './routes'
 
-var indexRouter = require('../routes/index');
-var usersRouter = require('../routes/users');
+export default function (app) {
+    app.use(express.json());
+    app.use(express.urlencoded({ extended: false }));
+    app.use(cookieParser());
+    app.use(express.static(path.join(__dirname, 'public')));
 
-var app = express();
+    // Routes
+    app.use(usersRouter);
 
-app.use(logger('dev'));
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser());
-app.use(express.static(path.join(__dirname, 'public')));
-
-app.use('/', indexRouter);
-app.use('/users', usersRouter);
-
-// 404
-app.use((req, res) => {
-    res.status(404).send({
-        status: 404,
-        message: 'The requested resource was not found',
+    // 404
+    app.use((req, res) => {
+        res.status(404).send({
+            status: 404,
+            message: 'The requested resource was not found',
+        });
     });
-});
 
-module.exports = app;
+    // 5xx
+    app.use((err, req, res) => {
+        log.error(err.stack);
+
+        const message = process.env.NODE_ENV === 'production'
+            ? 'Something went wrong, we\'re looking into it...'
+            : err.stack;
+
+        res.status(500).send({
+            status: 500,
+            message,
+        });
+    });
+}

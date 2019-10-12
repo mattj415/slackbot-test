@@ -9,6 +9,7 @@
     "lint": "eslint src"
   },
   "dependencies": {
+    "@slack/webhook": "^5.0.2",
     "babel-preset-env": "^1.7.0",
     "config": "^3.2.3",
     "cookie-parser": "~1.4.4",

@@ -24,13 +24,7 @@ router.post('/plex', async function(req, res, next) {
     const busboy = new Busboy({ headers: req.headers });
     let payload = null;
     busboy.on('file', function(fieldname, file, filename, encoding, mimetype) {
-        log.info('File [' + fieldname + ']: filename: ' + filename + ', encoding: ' + encoding + ', mimetype: ' + mimetype);
-        file.on('data', function(data) {
-            log.info('File [' + fieldname + '] got ' + data.length + ' bytes');
-        });
-        file.on('end', function() {
-            log.info('File [' + fieldname + '] Finished');
-        });
+        file.resume();
     });
     busboy.on('field', function(fieldname, val, fieldnameTruncated, valTruncated, encoding, mimetype) {
         if (fieldname === 'payload') {
@@ -39,24 +33,15 @@ router.post('/plex', async function(req, res, next) {
             } catch (e) {
                 log.info(e);
             }
-        log.info('create payload');
-
-        } else {
-          log.info('Field [' + fieldname + ']: value: ' + inspect(val));
         }
     });
     busboy.on('finish', async function() {
-        log.info('Done parsing form!');
-        log.info('check payload');
         if (payload ) {
-            log.info('found payload');
-            
             if (payload.event === 'media.play'){
                 const webhook = new IncomingWebhook(slackConfig.webhookURL);
                 const msg = {
                     text: `Server ${payload.Server.title} is playing the following ${payload.Metadata.type} ${payload.Metadata.title}`
                 };
-
                 await webhook.send(msg);
                 log.info(`sent a message!:${msg}`);
             } else {
